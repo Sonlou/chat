@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Barbara</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    .chat-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .chat-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    .chat-container::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 10px;
+    }
+    .chat-container::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.4;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .typing-dot {
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+    .typing-dot:nth-child(1) {
+      animation-delay: 0s;
+    }
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.3s;
+    }
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.6s;
+    }
+
+    .message {
+      transition: all 0.3s ease;
+    }
+
+    .dot-animate::after {
+      content: '';
+      display: inline-block;
+      width: 1em;
+      text-align: left;
+      animation: dots 1.5s steps(3, end) infinite;
+    }
+
+    @keyframes dots {
+      0% { content: ''; }
+      33% { content: '.'; }
+      66% { content: '..'; }
+      100% { content: '...'; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white p-4 shadow-md">
+    <div class="container mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center">
+          <i class="fas fa-robot text-xl"></i>
+        </div>
+        <h1 class="text-xl font-bold">Barbara </h1>
+      </div>
+    </div>
+  </header>
+
+  <!-- Chat Container -->
+  <div class="flex-1 overflow-hidden container mx-auto max-w-4xl p-4">
+    <div class="bg-white rounded-xl shadow-md h-full flex flex-col">
+      
+      <!-- Chat messages -->
+      <div class="chat-container flex-1 overflow-y-auto p-4 space-y-4" id="chat-messages">
+        <div class="message flex">
+          <div class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+            <i class="fas fa-robot text-indigo-600"></i>
+          </div>
+          <div class="bg-indigo-100 rounded-xl p-3 max-w-xs md:max-w-md lg:max-w-lg">
+            <p class="text-gray-800">Hello! 👋 I'm your AI assistant. How can I help you today?</p>
+            <p class="text-xs text-gray-500 mt-1">Today at <span id="current-time"></span></p>
+          </div>
+        </div>
+
+        <!-- Typing indicator -->
+        <div class="message flex hidden" id="typing-indicator">
+          <!-- Filled dynamically -->
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="border-t p-4 bg-gray-50 rounded-b-xl">
+        <div class="flex items-center space-x-2">
+          <div class="flex-1 relative">
+            <textarea 
+              id="user-input" 
+              class="w-full border border-gray-300 rounded-full py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none" 
+              placeholder="Type your message here..." 
+              rows="1"
+              style="min-height: 50px; max-height: 120px;"></textarea>
+            <button class="absolute right-3 bottom-3 text-gray-400 hover:text-indigo-600 transition">
+              <i class="far fa-smile"></i>
+            </button>
+          </div>
+          <button 
+            id="send-button" 
+            class="p-3 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled>
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+        <p class="text-xs text-gray-500 mt-2 text-center">Barabara may produce inaccurate information pls check for yourself first.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('current-time').textContent = timeString;
+
+      const chatMessages = document.getElementById('chat-messages');
+      const userInput = document.getElementById('user-input');
+      const sendButton = document.getElementById('send-button');
+      const typingIndicator = document.getElementById('typing-indicator');
+
+      userInput.addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+        sendButton.disabled = this.value.trim() === '';
+      });
+
+      userInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      sendButton.addEventListener('click', sendMessage);
+
+      async function sendMessage() {
+        const message = userInput.value.trim();
+        if (message === '') return;
+
+        addMessage(message, 'user');
+        userInput.value = '';
+        userInput.style.height = 'auto';
+        sendButton.disabled = true;
+
+        // Show typing indicator
+        typingIndicator.classList.remove('hidden');
+        typingIndicator.innerHTML = `
+          <div class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+            <i class="fas fa-robot text-indigo-600"></i>
+          </div>
+          <div class="bg-indigo-100 rounded-xl p-3 max-w-xs md:max-w-md lg:max-w-lg">
+            <p class="text-gray-800 font-medium italic">Thinking<span class="dot-animate"></span></p>
+          </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        try {
+          const response = await fetch('http://localhost:11434/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'gemma3:1b',
+              prompt: message,
+              stream: false
+            })
+          });
+
+          const data = await response.json();
+          typingIndicator.classList.add('hidden');
+          addMessage(data.response || '[No response]', 'bot');
+
+        } catch (err) {
+          typingIndicator.classList.add('hidden');
+          addMessage("❌ Error: Could not connect to Ollama server.<br>Is Ollama running? Try <code>ollama serve</code> in your terminal.", 'bot');
+        } finally {
+          sendButton.disabled = false;
+        }
+      }
+
+      function addMessage(text, sender) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message flex ${sender === 'user' ? 'justify-end' : ''} my-2`;
+
+        if (sender === 'bot') {
+          messageDiv.innerHTML = `
+            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+              <i class="fas fa-robot text-indigo-600"></i>
+            </div>
+            <div class="bg-indigo-100 rounded-xl p-3 max-w-xs md:max-w-md lg:max-w-lg break-words whitespace-pre-wrap">
+              <p class="text-gray-800">${text.replace(/\n/g, '<br>')}</p>
+              <p class="text-xs text-gray-500 mt-1">${timeString}</p>
+            </div>
+          `;
+        } else {
+          messageDiv.innerHTML = `
+            <div class="bg-indigo-600 text-white rounded-xl p-3 max-w-xs md:max-w-md lg:max-w-lg break-words whitespace-pre-wrap">
+              <p>${text.replace(/\n/g, '<br>')}</p>
+              <p class="text-xs text-indigo-200 mt-1">${timeString}</p>
+            </div>
+          `;
+        }
+
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      userInput.focus();
+    });
+  </script>
+</body>
+</html>
+
